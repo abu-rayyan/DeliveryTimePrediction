@@ -26,13 +26,13 @@ def return_predicted_time():
     #Convert json into pandas dataframe
     df = pd.DataFrame.from_dict(json_array)
     input_items = len(json_array)
-    if input_items == 2:
+    if input_items == 4:
         model, inputs, time = model1(json_array)
-    elif input_items == 3:
+    elif input_items == 6:
         model, inputs, time = model2(json_array)
-    elif input_items == 4:
+    elif input_items == 7:
         model, inputs, time = model3(json_array)
-    elif input_items == 5:
+    elif input_items == 8:
         model, inputs, time = model4(json_array)
     else:
         print("Please lookafter your inputs")
@@ -49,11 +49,7 @@ def return_predicted_time():
     total_time = time + datetime.timedelta(hours=int(hours) , minutes=int(minutes))
     total_time_into_datetime = total_time.to_pydatetime()
     
-    if 13 <= int(total_time_into_datetime.hour) <= 16:
-        hours = int(hours)+16
-        total_time = time.replace(hour=hours, minute=int(minutes))
-    
-    elif int(total_time_into_datetime.hour) >= 19:
+    if int(total_time_into_datetime.hour) >= 21:
         hours = int(hours)+10
         total_time = time.replace(hour=hours, minute=int(minutes))
         total_time = total_time + datetime.timedelta(days=1)
@@ -74,7 +70,7 @@ def model1(json_array):
     df = pd.DataFrame.from_dict(json_array)
     df['CreatedTime'] = pd.to_datetime(df['CreatedTime'])
     timestamp_into_int = df['CreatedTime'].values.astype(int)
-    location_code = df[['LocationCode']].values
+    location_code = df[['LocationCode', 'PendingOrdersLocationWise', 'Qty']].values
     X = np.insert(location_code, 1,timestamp_into_int , axis=1)
     model = joblib.load('/home/expertsvision/Desktop/delivery_predict_time/model1_dt.sav')
     time = df.iloc[0]['CreatedTime']
@@ -86,8 +82,8 @@ def model2(json_array):
                                                 'BikerAssignedTime']].apply(pd.to_datetime)
     timestamp_into_int = df[['CreatedTime','BikerAssignedTime']].values.astype(int)
     df['biker_id'], levels = pd.factorize(df['Biker'])
-    other_features = df[['biker_id']].values                                   
-    X = np.concatenate((timestamp_into_int, other_features), axis=1)
+    other_features = df['BikerID', 'PendingOrderByBiker', 'PendingOrdersLocationWise', 'Qty'].values                                   
+    X = np.concatenate((other_features, timestamp_into_int), axis=1)
     model = joblib.load('/home/expertsvision/Desktop/delivery_predict_time/model2_dt.sav')
     time =  df.iloc[0]['BikerAssignedTime']
     return model, X, time
@@ -97,9 +93,8 @@ def model3(json_array):
     df[['CreatedTime','BikerAssignedTime', 'BikerAcceptedTime']] = df[['CreatedTime',
                         'BikerAssignedTime', 'BikerAcceptedTime']].apply(pd.to_datetime)
     timestamp_into_int = df[['CreatedTime','BikerAssignedTime', 'BikerAcceptedTime']].values.astype(int)
-    df['biker_id'], levels = pd.factorize(df['Biker'])
-    other_features = df[['biker_id']].values
-    X = np.concatenate((timestamp_into_int, other_features), axis=1)                       
+    other_features = df['BikerID', 'PendingOrderByBiker', 'PendingOrdersLocationWise', 'Qty'].values 
+    X = np.concatenate((other_features,timestamp_into_int), axis=1)                       
     model = joblib.load('/home/expertsvision/Desktop/delivery_predict_time/model3_dt.sav')
     time =  df.iloc[0]['BikerAcceptedTime']
     return model, X, time
@@ -110,9 +105,9 @@ def model4(json_array):
             'BikerAssignedTime', 'BikerAcceptedTime', 'InBikeTime']].apply(pd.to_datetime)
     timestamp_into_int = df[['CreatedTime','BikerAssignedTime', 'BikerAcceptedTime', 
                                                             'InBikeTime']].values.astype(int)
-    df['biker_id'], levels = pd.factorize(df['Biker'])
-    other_features = df[['biker_id']].values
-    X = np.concatenate((timestamp_into_int, other_features), axis=1)
+    
+    other_features = df['BikerID', 'PendingOrderByBiker', 'PendingOrdersLocationWise', 'Qty'].values
+    X = np.concatenate((other_features, timestamp_into_int), axis=1)
     model = joblib.load('/home/expertsvision/Desktop/delivery_predict_time/model4_dt.sav')
     time =  df.iloc[0]['InBikeTime']
     return model, X, time
