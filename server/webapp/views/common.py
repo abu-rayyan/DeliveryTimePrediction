@@ -25,19 +25,19 @@ def return_predicted_time():
     json_array = request.get_json()
     #Convert json into pandas dataframe
     df = pd.DataFrame.from_dict(json_array)
-    Organization_ID = json_array["OrganizationID"] 
+    Organization_ID = json_array["OrganizationID"]
     input_items = len(json_array)
     if input_items == 5:
         model, inputs, time = model1(json_array)
-    elif input_items == 7:
-        model, inputs, time = model2(json_array)
     elif input_items == 8:
-        model, inputs, time = model3(json_array)
+        model, inputs, time = model2(json_array)
     elif input_items == 9:
+        model, inputs, time = model3(json_array)
+    elif input_items == 10:
         model, inputs, time = model4(json_array)
     else:
         print("Please lookafter your inputs")
-    
+
     # predict the delivery time
     predict_output = model.predict(inputs)
     # predicted time is in epoc date so we will convert again to 
@@ -46,10 +46,10 @@ def return_predicted_time():
     print(Organization_ID)
     hours = str(predict_output[0]).split('.')[0]
     minutes = str(minutes[0]).split('.')[0]
-    
+
     total_time = time + datetime.timedelta(hours=int(hours) , minutes=int(minutes))
     total_time_into_datetime = total_time.to_pydatetime()
-    
+
     if int(Organization_ID) == 205 :
         if int(total_time_into_datetime.hour) >= 21:
             hours = int(hours)+10
@@ -57,7 +57,7 @@ def return_predicted_time():
             total_time = total_time + datetime.timedelta(days=1)
             if int(total_time_into_datetime.weekday()) == 4:
                 total_time = total_time + datetime.timedelta(days=2)
-    
+
     elif int(Organization_ID) == 2158 :
         if not 16 <= int(total_time_into_datetime.hour) <= 19:
             hours = int(hours)+16
@@ -65,10 +65,10 @@ def return_predicted_time():
 
 
     hour_min_days = total_time - time
-    t1={ 
+    t1={
         'time_in_hours_and_minutes':str(hour_min_days),
         'time_with_date_and_time':str(total_time)
-    
+
     }
 
     response = Response(json.dumps(t1))
@@ -89,7 +89,7 @@ def model2(json_array):
     df[['CreatedTime','BikerAssignedTime']] = df[['CreatedTime',
                                                 'BikerAssignedTime']].apply(pd.to_datetime)
     timestamp_into_int = df[['CreatedTime','BikerAssignedTime']].values.astype(int)
-    other_features = df[['BikerID', 'PendingOrderByBiker', 'PendingOrdersLocationWise', 'Qty']].values                                   
+    other_features = df[['BikerID', 'LocationCode', 'Qty', 'PendingOrderByBiker', 'PendingOrdersLocationWise']].values
     X = np.concatenate((other_features, timestamp_into_int), axis=1)
     model = joblib.load('/home/expertsvision/Desktop/DeliveryTimePrediction/saved_models/model2_dt.sav')
     time =  df.iloc[0]['BikerAssignedTime']
@@ -100,8 +100,8 @@ def model3(json_array):
     df[['CreatedTime','BikerAssignedTime', 'BikerAcceptedTime']] = df[['CreatedTime',
                         'BikerAssignedTime', 'BikerAcceptedTime']].apply(pd.to_datetime)
     timestamp_into_int = df[['CreatedTime','BikerAssignedTime', 'BikerAcceptedTime']].values.astype(int)
-    other_features = df[['BikerID', 'PendingOrderByBiker', 'PendingOrdersLocationWise', 'Qty']].values 
-    X = np.concatenate((other_features,timestamp_into_int), axis=1)                       
+    other_features = df[['BikerID', 'LocationCode', 'PendingOrdersLocationWise']].values
+    X = np.concatenate((other_features,timestamp_into_int), axis=1)
     model = joblib.load('/home/expertsvision/Desktop/DeliveryTimePrediction/saved_models/model3_dt.sav')
     time =  df.iloc[0]['BikerAcceptedTime']
     return model, X, time
